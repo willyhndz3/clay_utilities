@@ -51,36 +51,22 @@ def clay_status():
 
 @app.route('/clay/members', methods=['GET'])
 def clay_get_members():
-    """Clay-compatible endpoint to get all members"""
-    return jsonify({
-        "success": True,
-        "data": MOCK_MEMBERS,
-        "count": len(MOCK_MEMBERS),
-        "message": "Members retrieved successfully"
-    })
+    """Clay-compatible endpoint to get all members - returns array directly"""
+    # Clay expects a direct array, not an object with a 'data' property
+    return jsonify(MOCK_MEMBERS)
 
 @app.route('/clay/members/search', methods=['GET'])
 def clay_search_members():
-    """Clay-compatible search endpoint"""
+    """Clay-compatible search endpoint - returns array directly"""
     query = request.args.get('q', '').lower()
     
     if not query:
-        return jsonify({
-            "success": False,
-            "error": "Query parameter 'q' is required",
-            "data": [],
-            "count": 0
-        }), 400
+        return jsonify([]), 400
     
     results = [m for m in MOCK_MEMBERS if query in m['name'].lower() or query in m.get('title', '').lower()]
     
-    return jsonify({
-        "success": True,
-        "data": results,
-        "count": len(results),
-        "query": query,
-        "message": f"Found {len(results)} members matching '{query}'"
-    })
+    # Clay expects a direct array
+    return jsonify(results)
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
