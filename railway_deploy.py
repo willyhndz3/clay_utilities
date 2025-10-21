@@ -39,6 +39,7 @@ def initialize_scraper():
                 "bio": member.bio or "",
                 "profile_url": member.profile_url or "",
                 "member_type": member.member_type or "Standard Member",
+                "badges": member.badges or "",
                 "source": "ELE LLC Directory"
             })
         

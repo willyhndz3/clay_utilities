@@ -28,6 +28,7 @@ class Member:
     bio: Optional[str] = None
     profile_url: Optional[str] = None
     member_type: Optional[str] = None
+    badges: Optional[str] = None
 
 class ELEMembersJSONScraper:
     """Scraper that extracts member data from Next.js JSON"""
@@ -114,6 +115,10 @@ class ELEMembersJSONScraper:
             except:
                 pass
             
+            # Extract badges (Influencer, Ambassador, etc.)
+            badges = member_data.get('badges', [])
+            badges_str = ', '.join(badges) if badges else None
+            
             # Extract roles/designations from role_cap
             roles = []
             try:
@@ -136,7 +141,8 @@ class ELEMembersJSONScraper:
                 email=email or None,
                 linkedin=linkedin or None,
                 profile_url=profile_url,
-                member_type=member_type
+                member_type=member_type,
+                badges=badges_str
             )
             
             return member
