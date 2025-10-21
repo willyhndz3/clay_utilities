@@ -27,6 +27,7 @@ class Member:
     website: Optional[str] = None
     bio: Optional[str] = None
     profile_url: Optional[str] = None
+    member_type: Optional[str] = None
 
 class ELEMembersJSONScraper:
     """Scraper that extracts member data from Next.js JSON"""
@@ -113,6 +114,17 @@ class ELEMembersJSONScraper:
             except:
                 pass
             
+            # Extract roles/designations from role_cap
+            roles = []
+            try:
+                role_cap_str = member_data.get('role_cap', '[]')
+                roles = json.loads(role_cap_str) if role_cap_str else []
+            except:
+                pass
+            
+            # Determine member type based on roles
+            member_type = self.determine_member_type(roles)
+            
             # Create profile URL
             user_nicename = member_data.get('user_nicename', '')
             profile_url = f"{self.base_url}/members/{user_nicename}" if user_nicename else None
@@ -123,7 +135,8 @@ class ELEMembersJSONScraper:
                 company=company,
                 email=email or None,
                 linkedin=linkedin or None,
-                profile_url=profile_url
+                profile_url=profile_url,
+                member_type=member_type
             )
             
             return member
@@ -131,6 +144,37 @@ class ELEMembersJSONScraper:
         except Exception as e:
             logger.debug(f"Error parsing member: {e}")
             return None
+    
+    def determine_member_type(self, roles: list) -> str:
+        """Determine member type from roles"""
+        if not roles:
+            return "Standard Member"
+        
+        # Priority order for member types
+        role_priority = {
+            'ele_industry_legend': 'Industry Legend',
+            'ele_executive': 'Executive',
+            'ele_cdo': 'CDO',
+            'ele_ambassador': 'Ambassador',
+            'ele_producer': 'Producer',
+            'contributor': 'Contributor',
+            'ele_tmec': 'TMEC',
+            'ele_onboarding_buddy': 'Onboarding Buddy',
+            'rcp_partner_member': 'Partner Member',
+            'rcp_ele_member': 'ELE Member',
+            'rcp_online-only_member': 'Online-Only Member',
+            'invited': 'Invited',
+            'subscriber': 'Subscriber',
+            'member': 'Member'
+        }
+        
+        # Find highest priority role
+        for role_key, role_name in role_priority.items():
+            if role_key in roles:
+                return role_name
+        
+        # If no known role, join all roles
+        return ', '.join(roles)
 
 if __name__ == "__main__":
     scraper = ELEMembersJSONScraper()
@@ -145,4 +189,6 @@ if __name__ == "__main__":
             print(f"     Company: {member.company}")
         if member.email:
             print(f"     Email: {member.email}")
+        if member.member_type:
+            print(f"     Member Type: {member.member_type}")
 
