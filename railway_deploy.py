@@ -7,7 +7,7 @@ Full version with real scraper for Clay integration
 from flask import Flask, jsonify, request
 import json
 import os
-from ele_members_scraper import ELEMembersScraper
+from ele_members_json_scraper import ELEMembersJSONScraper
 
 app = Flask(__name__)
 
@@ -20,7 +20,7 @@ def initialize_scraper():
     global scraper, members_data
     if scraper is None:
         print("🔄 Initializing ELE LLC Members scraper...")
-        scraper = ELEMembersScraper()
+        scraper = ELEMembersJSONScraper()
         scraper_members = scraper.scrape_all_members()
         
         # Convert Member objects to Clay-compatible dictionaries
