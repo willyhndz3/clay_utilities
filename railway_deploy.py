@@ -1,32 +1,49 @@
 #!/usr/bin/env python3
 """
 Railway Deployment for ELE LLC Members API
-Minimal version for Clay integration
+Full version with real scraper for Clay integration
 """
 
 from flask import Flask, jsonify, request
 import json
 import os
+from ele_members_scraper import ELEMembersScraper
 
 app = Flask(__name__)
 
-# Mock data for testing (will be replaced with real scraper later)
-MOCK_MEMBERS = [
-    {
-        "id": "test-member-1",
-        "name": "Test Member 1",
-        "title": "CEO",
-        "company": "Test Company",
-        "location": "San Francisco, CA",
-        "email": "test@example.com",
-        "phone": "555-0123",
-        "linkedin_url": "https://linkedin.com/in/test",
-        "website_url": "https://example.com",
-        "bio": "Test bio",
-        "profile_url": "https://www.ele.llc/members/test",
-        "source": "ELE LLC Directory"
-    }
-]
+# Global scraper instance
+scraper = None
+members_data = []
+
+def initialize_scraper():
+    """Initialize the scraper and fetch real data"""
+    global scraper, members_data
+    if scraper is None:
+        print("🔄 Initializing ELE LLC Members scraper...")
+        scraper = ELEMembersScraper()
+        scraper_members = scraper.scrape_all_members()
+        
+        # Convert Member objects to Clay-compatible dictionaries
+        members_data = []
+        for member in scraper_members:
+            members_data.append({
+                "id": member.name.lower().replace(" ", "-").replace("'", ""),
+                "name": member.name,
+                "title": member.title or "",
+                "company": member.company or "",
+                "location": member.location or "",
+                "email": member.email or "",
+                "phone": member.phone or "",
+                "linkedin_url": member.linkedin or "",
+                "website_url": member.website or "",
+                "bio": member.bio or "",
+                "profile_url": member.profile_url or "",
+                "source": "ELE LLC Directory"
+            })
+        
+        print(f"✅ Scraped {len(members_data)} members successfully!")
+    
+    return members_data
 
 @app.route('/', methods=['GET'])
 def health_check():
@@ -40,30 +57,33 @@ def health_check():
 @app.route('/clay/status', methods=['GET'])
 def clay_status():
     """Clay-compatible status endpoint"""
+    members = initialize_scraper()
     return jsonify({
         "success": True,
         "status": "active",
-        "service": "ELE LLC Members API (Railway)",
-        "version": "1.0.0",
-        "members_count": len(MOCK_MEMBERS),
-        "message": "API is running and ready for Clay cloud integration"
+        "service": "ELE LLC Members API (Railway - Real Data)",
+        "version": "2.0.0",
+        "members_count": len(members),
+        "message": "API is running with real ELE LLC member data"
     })
 
 @app.route('/clay/members', methods=['GET'])
 def clay_get_members():
     """Clay-compatible endpoint to get all members - returns array directly"""
+    members = initialize_scraper()
     # Clay expects a direct array, not an object with a 'data' property
-    return jsonify(MOCK_MEMBERS)
+    return jsonify(members)
 
 @app.route('/clay/members/search', methods=['GET'])
 def clay_search_members():
     """Clay-compatible search endpoint - returns array directly"""
+    members = initialize_scraper()
     query = request.args.get('q', '').lower()
     
     if not query:
         return jsonify([]), 400
     
-    results = [m for m in MOCK_MEMBERS if query in m['name'].lower() or query in m.get('title', '').lower()]
+    results = [m for m in members if query in m['name'].lower() or query in m.get('title', '').lower()]
     
     # Clay expects a direct array
     return jsonify(results)
